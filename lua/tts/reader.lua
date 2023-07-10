@@ -8,7 +8,9 @@ local function read_print(msg)
 	print(msg.message)
 end
 
-local function read_error(msg) end
+local function read_error(msg)
+	print(msg.guid .. ";" .. msg.errorMessagePrefix .. msg.error)
+end
 
 local function read_custom(msg) end
 
