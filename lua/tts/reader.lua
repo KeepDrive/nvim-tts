@@ -14,7 +14,9 @@ end
 
 local function read_custom(msg) end
 
-local function read_return(msg) end
+local function read_return(msg)
+	print(tostring(msg.returnValue))
+end
 
 local function read_save_game(msg) end
 
