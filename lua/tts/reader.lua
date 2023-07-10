@@ -4,7 +4,9 @@ local function read_new_script(msg) end
 
 local function read_load_game(msg) end
 
-local function read_print(msg) end
+local function read_print(msg)
+	print(msg.message)
+end
 
 local function read_error(msg) end
 
@@ -29,7 +31,7 @@ local readers = {
 
 local function read_message(str)
 	local msg = json.decode(str)
-	readers[msg["messageID"]](msg)
+	readers[msg.messageID](msg)
 end
 
 return { read_message = read_message }
