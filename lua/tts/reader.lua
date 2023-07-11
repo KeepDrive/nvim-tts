@@ -18,7 +18,9 @@ local function read_return(msg)
 	print(tostring(msg.returnValue))
 end
 
-local function read_save_game(msg) end
+local function read_save_game(msg)
+	--Empty message?
+end
 
 local function read_created_object(msg) end
 
