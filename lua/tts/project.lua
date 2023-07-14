@@ -98,6 +98,21 @@ function public.write_object(name, guid, script, ui)
 		object_config.ui = object_config.ui or project_path .. "/" .. guid .. ".xml"
 		write_file(object_config.ui, ui)
 	end
+	object_config.updated = false
+end
+
+function public.create_autocmd()
+	vim.api.nvim.create_autocmd("FileWritePost", {
+		callback = function(args)
+			local path = fs.normalize(args.file)
+			local object = vim.iter(project_config):find(function(object)
+				return object.script == path or object.xml == path
+			end)
+			if object then
+				object.updated = true
+			end
+		end,
+	})
 end
 
 return public
