@@ -10,6 +10,8 @@ local scan_depth = 5
 
 local get_homedir = vim.uv.os_homedir
 
+local public = {}
+
 local function get_buffer_dir()
 	return fs.dirname(vim.api.nvim_buf_get_name(0))
 end
@@ -29,11 +31,17 @@ local function write_file(path, data)
 	file:close()
 end
 
-local function write_config()
+local function set_project_path(path)
+	path = fs.normalize(path)
+	project_path = path
+	project_config_path = project_path .. "/" .. project_config_filename
+end
+
+function public.write_config()
 	write_file(project_config_path, json.encode(project_config))
 end
 
-local function read_config()
+function public.read_config()
 	local config, err = io.open(project_config_path, "r")
 	assert(config, err)
 	local config_data = config:read("*a")
@@ -42,22 +50,16 @@ local function read_config()
 	project_config = json.decode(config_data)
 end
 
-local function set_project_path(path)
-	path = fs.normalize(path)
-	project_path = path
-	project_config_path = project_path .. "/" .. project_config_filename
-end
-
-local function create_project()
+function public.create_project()
 	if locate_project() then
 		print("Project config already exists, stopping")
 		return
 	end
 	set_project_path(".")
-	write_config()
+	public.write_config()
 end
 
-local function scan_project()
+function public.scan_project()
 	local filename_regex = vim.regex("[^\\/]+(?=\\.(lua|xml)$)")
 	for name, type in fs.dir(project_path, { depth = scan_depth }) do
 		if type == "file" then
@@ -72,10 +74,10 @@ local function scan_project()
 			end
 		end
 	end
-	write_config()
+	public.write_config()
 end
 
-local function write_object(name, guid, script, ui)
+function public.write_object(name, guid, script, ui)
 	local object_config = project_config[guid]
 	if not object_config then
 		object_config = {}
@@ -91,3 +93,5 @@ local function write_object(name, guid, script, ui)
 		write_file(object_config.ui, ui)
 	end
 end
+
+return public
