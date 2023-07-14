@@ -10,6 +10,8 @@ local project_config_path = nil
 
 local public = {}
 
+local write_autocmd
+
 local function get_buffer_dir()
 	return fs.dirname(vim.api.nvim_buf_get_name(0))
 end
@@ -102,7 +104,10 @@ function public.write_object(name, guid, script, ui)
 end
 
 function public.create_autocmd()
-	vim.api.nvim.create_autocmd("FileWritePost", {
+	if write_autocmd then
+		return
+	end
+	write_autocmd = vim.api.nvim.create_autocmd("FileWritePost", {
 		callback = function(args)
 			local path = fs.normalize(args.file)
 			local object = vim.iter(project_config):find(function(object)

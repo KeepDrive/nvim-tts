@@ -28,4 +28,10 @@ return {
 		---Change this if you want the config to be called something else
 		config_filename = ".tts",
 	},
+	general = {
+		---Use an autocmd to track file updates so only updated files get sent to TTS
+		use_file_write_autocmd = true,
+		---Use an autocmd to properly stop the server and write to config before nvim closes
+		use_vim_leave_autocmd = true,
+	},
 }
