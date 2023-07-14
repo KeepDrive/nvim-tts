@@ -1,5 +1,4 @@
 return {
-	---Server related settings
 	server = {
 		---Backlog value for the tcp servers, 5 by default to be safe
 		---Traditionally a value of 128 is used
@@ -18,10 +17,15 @@ return {
 		---Or you're rerouting stuff somehow
 		sender_port = 39999,
 	},
-	---Reader related settings
 	reader = {
 		---TTS custom message handler
 		---msg contains the "customMessage" field of the api message
 		handle_custom_message = function(msg) end,
+	},
+	project = {
+		---How deep the project should be scanned for lua/xml files
+		scan_depth = 5,
+		---Change this if you want the config to be called something else
+		config_filename = ".tts",
 	},
 }

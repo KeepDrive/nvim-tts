@@ -1,14 +1,12 @@
 local fs = vim.fs
 local json = vim.json
+local get_homedir = vim.uv.os_homedir
+
+local config = require("tts.config").project
 
 local project_path = nil
 local project_config = {}
 local project_config_path = nil
-local project_config_filename = ".tts"
-
-local scan_depth = 5
-
-local get_homedir = vim.uv.os_homedir
 
 local public = {}
 
@@ -17,10 +15,8 @@ local function get_buffer_dir()
 end
 
 local function locate_project()
-	local locations = fs.find(
-		project_config_filename,
-		{ upward = true, type = "file", stop = get_homedir(), path = get_buffer_dir() }
-	)
+	local locations =
+		fs.find(config.config_filename, { upward = true, type = "file", stop = get_homedir(), path = get_buffer_dir() })
 	return locations and locations[1]
 end
 
@@ -34,7 +30,7 @@ end
 local function set_project_path(path)
 	path = fs.normalize(path)
 	project_path = path
-	project_config_path = project_path .. "/" .. project_config_filename
+	project_config_path = project_path .. "/" .. config.config_filename
 end
 
 function public.write_config()
@@ -42,11 +38,11 @@ function public.write_config()
 end
 
 function public.read_config()
-	local config, err = io.open(project_config_path, "r")
-	assert(config, err)
-	local config_data = config:read("*a")
+	local config_file, err = io.open(project_config_path, "r")
+	assert(config_file, err)
+	local config_data = config_file:read("*a")
 	assert(config_data, "Config read failed")
-	config:close()
+	config_file:close()
 	project_config = json.decode(config_data)
 end
 
@@ -71,7 +67,7 @@ end
 
 function public.scan_project()
 	local filename_regex = vim.regex("[^\\/]+(?=\\.(lua|xml)$)")
-	for name, type in fs.dir(project_path, { depth = scan_depth }) do
+	for name, type in fs.dir(project_path, { depth = config.scan_depth }) do
 		if type == "file" then
 			local filename = filename_regex:match_str(name)
 			local object_config = project_config[filename]
