@@ -39,7 +39,9 @@ local function read_save_game(msg)
 	--Empty message?
 end
 
-local function read_created_object(msg) end
+local function read_created_object(msg)
+	project.write_object(nil, msg.guid, nil, nil)
+end
 
 local readers = {
 	[0] = read_new_script,
