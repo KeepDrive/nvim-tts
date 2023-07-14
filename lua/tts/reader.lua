@@ -1,5 +1,9 @@
 local json = vim.json
 
+local config = require("tts.config").reader
+
+local public = {}
+
 local function read_new_script(msg) end
 
 local function read_load_game(msg) end
@@ -12,7 +16,9 @@ local function read_error(msg)
 	print(msg.guid .. ";" .. msg.errorMessagePrefix .. msg.error)
 end
 
-local function read_custom(msg) end
+local function read_custom(msg)
+	config.handle_custom_message(msg.customMessage)
+end
 
 local function read_return(msg)
 	print(tostring(msg.returnValue))
@@ -35,9 +41,9 @@ local readers = {
 	[7] = read_created_object,
 }
 
-local function read_message(str)
+function public.read_message(str)
 	local msg = json.decode(str)
 	readers[msg.messageID](msg)
 end
 
-return { read_message = read_message }
+return public

@@ -1,6 +1,6 @@
 local uv = vim.uv
 
-local config = require("config").server
+local config = require("tts.config").server
 
 local public = {}
 

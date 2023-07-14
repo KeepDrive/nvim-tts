@@ -18,4 +18,10 @@ return {
 		---Or you're rerouting stuff somehow
 		sender_port = 39999,
 	},
+	---Reader related settings
+	reader = {
+		---TTS custom message handler
+		---msg contains the "customMessage" field of the api message
+		handle_custom_message = function(msg) end,
+	},
 }
