@@ -1,9 +1,6 @@
 local uv = vim.uv
 
-local localhost = "127.0.0.1"
-local listener_port = 39998
-local sender_port = 39999
-local backlog = 5
+local config = require("config").server
 
 local public = {}
 
@@ -29,7 +26,7 @@ end
 function public.start_server(ip, port)
 	local server = uv.new_tcp()
 	server:bind(ip, port)
-	server:listen(backlog, function(err)
+	server:listen(config.tcp_backlog, function(err)
 		assert(not err, err)
 		local client = start_client(server)
 		local server_metatable = { client = client }
