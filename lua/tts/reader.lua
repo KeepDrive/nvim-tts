@@ -1,12 +1,23 @@
 local json = vim.json
 
 local config = require("tts.config").reader
+local project = require("tts.project")
 
 local public = {}
 
-local function read_new_script(msg) end
+local function handle_script_states(script_states)
+	for object in script_states do
+		project.write_object(object.name, object.guid, object.script, object.ui)
+	end
+end
 
-local function read_load_game(msg) end
+local function read_new_script(msg)
+	handle_script_states(msg.script_states)
+end
+
+local function read_load_game(msg)
+	handle_script_states(msg.script_states)
+end
 
 local function read_print(msg)
 	print(msg.message)
