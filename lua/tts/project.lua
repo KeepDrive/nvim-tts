@@ -59,6 +59,16 @@ function public.create_project()
 	public.write_config()
 end
 
+function public.load_project()
+	local path = locate_project()
+	if not path then
+		print("TTS project not found")
+		return
+	end
+	set_project_path(path)
+	public.read_config()
+end
+
 function public.scan_project()
 	local filename_regex = vim.regex("[^\\/]+(?=\\.(lua|xml)$)")
 	for name, type in fs.dir(project_path, { depth = scan_depth }) do
