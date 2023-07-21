@@ -48,7 +48,7 @@ function public.stop_server(server)
 end
 
 function public.client_listen(client, reader)
-	get_server_client(server):read_start(function(err, data)
+	client:read_start(function(err, data)
 		assert(not err, err)
 		reader(data)
 	end)
