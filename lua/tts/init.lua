@@ -21,7 +21,6 @@ function public.start()
 		server.client_listen(client, reader.read_message)
 	end)
 	sender_server = server.start_server(config.server.ip, config.server.sender_port)
-	server.server_listen(listener_server, reader.read_message)
 	project.load_project()
 	print("TTS session started")
 	if config.general.use_vim_leave_autocmd and not stop_autocmd then
