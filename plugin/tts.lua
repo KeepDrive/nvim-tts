@@ -7,7 +7,7 @@ create_command("TTSPull", tts.pull, {})
 create_command("TTSCreateProject", tts.create_project, {})
 create_command("TTSScan", tts.scan_project, {})
 create_command("TTSExec", function(args)
-  if #args.args != 2 then
+  if #args.args ~= 2 then
     print("Incorrect argument amount")
     return
   end
