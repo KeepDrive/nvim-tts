@@ -6,8 +6,8 @@ local writer = require("tts.msg_writer")
 
 local public = {}
 
-local listener_server
-local sender_server
+local listener
+local sender
 local started = false
 
 local stop_autocmd
@@ -17,13 +17,8 @@ function public.start()
 		print("TTS session is already started")
 		return
 	end
-	listener_server = server.start_server(config.server.ip, config.server.listener_port, function(client)
-		print("Listener server connected")
-		server.client_listen(client, reader.read_message)
-	end)
-	sender_server = server.start_server(config.server.ip, config.server.sender_port, function(client)
-		print("Sender server connected")
-	end)
+	listener = server.start_listener(config.server.ip, config.server.listener_port, reader.read_message)
+	sender = server.start_sender(config.server.ip, config.server.sender_port)
 	project.load_project()
 	started = true
 	print("TTS session started")
@@ -40,8 +35,8 @@ function public.stop()
 		print("No TTS session to stop")
 		return
 	end
-	listener_server = server.stop_server(listener_server)
-	sender_server = server.stop_server(sender_server)
+	listener = server.stop_handle(listener)
+	sender = server.stop_handle(sender)
 	project.write_config()
 	started = false
 	print("TTS session stopped")
@@ -56,7 +51,7 @@ function public.push()
 		print("No TTS session")
 		return
 	end
-	server.server_send(sender_server, writer.write_save_and_play(not config.general.use_file_write_autocmd))
+	sender:write(writer.write_save_and_play(not config.general.use_file_write_autocmd))
 end
 
 function public.pull()
@@ -64,7 +59,7 @@ function public.pull()
 		print("No TTS session")
 		return
 	end
-	server.server_send(sender_server, writer.write_get_scripts())
+	sender:write(writer.write_get_scripts())
 end
 
 function public.exec_lua_code(guid, code)
@@ -72,7 +67,7 @@ function public.exec_lua_code(guid, code)
 		print("No TTS session")
 		return
 	end
-	server.server_send(sender_server, writer.write_lua_code(guid, code))
+	sender:write(writer.write_lua_code(guid, code))
 end
 
 function public.send_custom_message(msg)
@@ -80,7 +75,7 @@ function public.send_custom_message(msg)
 		print("No TTS session")
 		return
 	end
-	server.server_send(sender_server, writer.write_custom_message(msg))
+	sender:write(writer.write_custom_message(msg))
 end
 
 return public
