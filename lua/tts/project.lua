@@ -63,7 +63,7 @@ function public.load_project()
 		print("TTS project not found")
 		return
 	end
-	set_project_path(path)
+	set_project_path(fs.dirname(path))
 	public.read_config()
 end
 
