@@ -17,7 +17,9 @@ function public.start()
 		print("TTS session is already started")
 		return
 	end
-	listener_server = server.start_server(config.server.ip, config.server.listener_port)
+	listener_server = server.start_server(config.server.ip, config.server.listener_port, function(client)
+		server.client_listen(client, reader.read_message)
+	end)
 	sender_server = server.start_server(config.server.ip, config.server.sender_port)
 	server.server_listen(listener_server, reader.read_message)
 	project.load_project()

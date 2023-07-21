@@ -23,7 +23,7 @@ local function get_server_client(server)
 	return getmetatable(server).client
 end
 
-function public.start_server(ip, port)
+function public.start_server(ip, port, on_connect)
 	local server = uv.new_tcp()
 	server:bind(ip, port)
 	server:listen(config.tcp_backlog, function(err)
@@ -31,6 +31,9 @@ function public.start_server(ip, port)
 		local client = start_client(server)
 		local server_metatable = { client = client }
 		setmetatable(server, server_metatable)
+		if on_connect then
+			on_connect(client)
+		end
 	end)
 	return server
 end
@@ -44,7 +47,7 @@ function public.stop_server(server)
 	server:close()
 end
 
-function public.server_listen(server, reader)
+function public.client_listen(client, reader)
 	get_server_client(server):read_start(function(err, data)
 		assert(not err, err)
 		reader(data)
