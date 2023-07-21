@@ -22,6 +22,7 @@ function public.start()
 	end)
 	sender_server = server.start_server(config.server.ip, config.server.sender_port)
 	project.load_project()
+	started = true
 	print("TTS session started")
 	if config.general.use_vim_leave_autocmd and not stop_autocmd then
 		stop_autocmd = vim.api.nvim_create_autocmd("VimLeavePre", { callback = public.stop })
@@ -39,6 +40,7 @@ function public.stop()
 	listener_server = server.stop_server(listener_server)
 	sender_server = server.stop_server(sender_server)
 	project.write_config()
+	started = false
 	print("TTS session stopped")
 end
 
