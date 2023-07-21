@@ -39,7 +39,7 @@ function public.start_server(ip, port, on_connect)
 end
 
 function public.stop_server(server)
-	if server == nil then
+	if not server then
 		return
 	end
 	stop_client(get_server_client(server))
@@ -55,7 +55,12 @@ function public.client_listen(client, reader)
 end
 
 function public.server_send(server, data)
-	get_server_client(server):write(data)
+	local client = get_server_client(server)
+	if not client then
+		print("Sender server not connected")
+		return
+	end
+	client:write(data)
 end
 
 return public

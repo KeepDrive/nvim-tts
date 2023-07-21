@@ -18,9 +18,12 @@ function public.start()
 		return
 	end
 	listener_server = server.start_server(config.server.ip, config.server.listener_port, function(client)
+		print("Listener server connected")
 		server.client_listen(client, reader.read_message)
 	end)
-	sender_server = server.start_server(config.server.ip, config.server.sender_port)
+	sender_server = server.start_server(config.server.ip, config.server.sender_port, function(client)
+		print("Sender server connected")
+	end)
 	project.load_project()
 	started = true
 	print("TTS session started")
