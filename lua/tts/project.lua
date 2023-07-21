@@ -1,6 +1,6 @@
 local fs = vim.fs
 local json = vim.json
-local get_homedir = vim.uv.os_homedir
+local get_homedir = vim.loop.os_homedir
 
 local config = require("tts.config").project
 
