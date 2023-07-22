@@ -43,11 +43,18 @@ function public.start_listener(ip, port, reader)
 	return server
 end
 
+function connect_sender(sender, ip, port)
+	sender:connect(ip, port, function(err)
+		if err then
+			print("Sender connection failed with error " .. err .. ", retrying")
+			connect_sender(sender, ip, port)
+		end
+	end)
+end
+
 function public.start_sender(ip, port)
 	local sender = loop.new_tcp()
-	sender:connect(ip, port, function(err)
-		assert(not err, err)
-	end)
+	connect_sender(sender, ip, port)
 	return sender
 end
 
