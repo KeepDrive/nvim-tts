@@ -12,12 +12,12 @@ local function handle_script_states(script_states)
 end
 
 local function read_new_script(msg)
-	handle_script_states(msg.script_states)
+	handle_script_states(msg.scriptStates)
 	project.write_config()
 end
 
 local function read_load_game(msg)
-	handle_script_states(msg.script_states)
+	handle_script_states(msg.scriptStates)
 	project.write_config()
 end
 
