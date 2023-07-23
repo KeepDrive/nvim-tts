@@ -35,8 +35,8 @@ function public.stop()
 		print("No TTS session to stop")
 		return
 	end
-	listener = server.stop_handle(listener)
-	sender = server.stop_handle(sender)
+	listener:close()
+	sender:close()
 	project.write_config()
 	started = false
 	print("TTS session stopped")

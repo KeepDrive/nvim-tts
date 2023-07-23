@@ -3,68 +3,60 @@ local config = require("tts.config").server
 
 local public = {}
 
-local function start_client(server)
-	assert(server, "No server provided for client")
-	local client = loop.new_tcp()
-	server:accept(client)
-	return client
-end
-
-local function stop_client(client)
-	if not client then
-		return
+local function stop_listener(listener)
+	local client = listener.client
+	if client then
+		client:read_stop()
+		client:close()
 	end
-	client:read_stop()
-	client:shutdown()
-	client:close()
-end
-
-local function get_server_client(server)
-	return getmetatable(server).client
+	listener.handle:close()
 end
 
 function public.start_listener(ip, port, reader)
-	local server = loop.new_tcp()
-	server:bind(ip, port)
-	server:listen(config.tcp_backlog, function(err)
+	local handle = loop.new_tcp()
+	local listener = { handle = handle, client = nil, close = stop_listener }
+	handle:bind(ip, port)
+	handle:listen(config.tcp_backlog, function(err)
 		assert(not err, err)
-		local client = start_client(server)
-		local server_metatable = { client = client }
-		setmetatable(server, server_metatable)
+		local client = loop.new_tcp()
+		handle:accept(client)
+		listener.client = client
 		client:read_start(function(err, data)
 			assert(not err, err)
 			if not data then
 				client:read_stop()
+				client:close()
 				return
 			end
 			reader(data)
 		end)
 	end)
-	return server
+	return listener
 end
 
-function connect_sender(sender, ip, port)
-	sender:connect(ip, port, function(err)
+local function connect_sender_handle(handle, ip, port)
+	handle:connect(ip, port, function(err)
 		if err then
 			print("Sender connection failed with error " .. err .. ", retrying")
-			connect_sender(sender, ip, port)
+			connect_sender_handle(sender, ip, port)
 		end
 	end)
 end
 
-function public.start_sender(ip, port)
-	local sender = loop.new_tcp()
-	connect_sender(sender, ip, port)
-	return sender
-end
-
-function public.stop_handle(handle)
-	if not handle then
-		return
-	end
-	stop_client(get_server_client(handle))
+local function stop_sender(sender)
+	local handle = sender.handle
 	handle:shutdown()
 	handle:close()
+end
+
+local function sender_write(sender, data)
+	sender.handle:write(data)
+end
+
+function public.start_sender(ip, port)
+	local handle = loop.new_tcp()
+	connect_sender_handle(handle, ip, port)
+	return { handle = handle, write = sender_write, close = stop_sender }
 end
 
 return public
