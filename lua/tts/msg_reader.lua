@@ -6,7 +6,8 @@ local project = require("tts.project")
 local public = {}
 
 local function handle_script_states(script_states)
-	for object in script_states do
+	for i = 1, #script_states do
+		local object = script_states[i]
 		project.write_object(object.name, object.guid, object.script, object.ui)
 	end
 end
