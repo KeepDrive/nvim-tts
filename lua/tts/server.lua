@@ -38,7 +38,7 @@ local function connect_sender_handle(handle, ip, port)
 	handle:connect(ip, port, function(err)
 		if err then
 			print("Sender connection failed with error " .. err .. ", retrying")
-			connect_sender_handle(sender, ip, port)
+			connect_sender_handle(handle, ip, port)
 		end
 	end)
 end
