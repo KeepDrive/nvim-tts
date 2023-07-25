@@ -26,6 +26,7 @@ function public.start_listener(ip, port, reader)
 			if not data then
 				client:read_stop()
 				client:close()
+				listener.client = nil
 				return
 			end
 			reader(data)
