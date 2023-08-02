@@ -49,7 +49,7 @@ end
 
 local function set_project_path(path)
 	if path == "." then
-		path = vim.uv.cwd()
+		path = vim.loop.cwd()
 	end
 	path = fs.normalize(path)
 	project_path = path
