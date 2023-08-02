@@ -7,9 +7,9 @@ local header_start = "--[[tts.nvim\n"
 local header_name_key = "name="
 local header_guid_key = "guid="
 local header_type_key = "type="
-local header_end = "tts.nvim]]--"
-local xml_postfix = ">"
-local header_pattern = "<?!?%-%-%[%[tts%.nvim\n.-\ntts%.nvim%]%]%-%->?"
+local header_end = "tts.nvim]]"
+local xml_postfix = "-->"
+local header_pattern = "<?!?%-%-%[%[tts%.nvim\n.-\ntts%.nvim%]%]%-?%-?>?"
 
 local function take_header_out(code, remove_header)
 	local i, j = code:find(header_pattern)
