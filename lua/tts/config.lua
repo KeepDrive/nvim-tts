@@ -27,6 +27,8 @@ return {
 		scan_depth = 5,
 		---Change this if you want the config to be called something else
 		config_filename = ".tts",
+		---Header write rule, true if you want the header to be at the top of the file, false if you want it at the bottom.
+		header_at_top_of_file = true,
 	},
 	general = {
 		---Use an autocmd to track file updates so only updated files get sent to TTS

@@ -3,6 +3,7 @@ local json = vim.json
 local get_homedir = vim.loop.os_homedir
 
 local config = require("tts.config").project
+local script = require("tts.script")
 
 local project_path = nil
 local project_config = {}
@@ -20,6 +21,14 @@ local function locate_project()
 	local locations =
 		fs.find(config.config_filename, { upward = true, type = "file", stop = get_homedir(), path = get_buffer_dir() })
 	return locations and locations[1]
+end
+
+local function read_file(path)
+	local file, err = io.open(path)
+	assert(file, err)
+	local data = file:read("*a")
+	file:close()
+	return data
 end
 
 local function write_file(path, data)
@@ -40,11 +49,8 @@ function public.write_config()
 end
 
 function public.read_config()
-	local config_file, err = io.open(project_config_path, "r")
-	assert(config_file, err)
-	local config_data = config_file:read("*a")
+	local config_data = read_file(project_config_path)
 	assert(config_data, "Config read failed")
-	config_file:close()
 	project_config = json.decode(config_data)
 end
 
@@ -67,40 +73,36 @@ function public.load_project()
 	public.read_config()
 end
 
-function public.scan_project()
-	local filename_regex = vim.regex("[^\\/]+(?=\\.(lua|xml)$)")
-	for name, type in fs.dir(project_path, { depth = config.scan_depth }) do
-		if type == "file" then
-			local filename = filename_regex:match_str(name)
-			local object_config = project_config[filename]
-			if object_config then
-				if vim.endswith(name, ".lua") then
-					object_config.script = name
-				elseif vim.endswith(name, ".xml") then
-					object_config.ui = name
-				end
-			end
-		end
-	end
-	public.write_config()
-end
-
-function public.write_object(name, guid, script, ui)
-	local object_config = project_config[guid]
+local OBJECT_WRITE_SUCCESS = 0
+local OBJECT_WRITE_SCRIPT_FAILED = 1
+local OBJECT_WRITE_UI_FAILED = 2
+local OBJECT_WRITE_SCRIPT_UI_FAILED = 3
+function public.write_object(object)
+	local write_status = OBJECT_WRITE_SUCCESS
+	local object_config = project_config[object.guid]
 	if not object_config then
 		object_config = {}
-		project_config[guid] = object_config
+		project_config[object.guid] = object_config
 	end
-	object_config.name = name
-	if script then
-		object_config.script = object_config.script or project_path .. "/" .. guid .. ".lua"
-		write_file(object_config.script, script)
+	object_config.name = object.name
+	if object.script then
+		if object_config.script and not file_exists(object_config.script) then
+			write_status = write_status + OBJECT_WRITE_SCRIPT_FAILED
+		else
+			object_config.script = object_config.script or project_path .. "/" .. object.guid .. ".lua"
+			script.write_file(object_config.script, object.script, object.name, object.guid, "script")
+		end
 	end
-	if ui then
-		object_config.ui = object_config.ui or project_path .. "/" .. guid .. ".xml"
-		write_file(object_config.ui, ui)
+	if object.ui then
+		if object_config.ui and not file_exists(object_config.ui) then
+			write_status = write_status + OBJECT_WRITE_UI_FAILED
+		else
+			object_config.ui = object_config.ui or project_path .. "/" .. object.guid .. ".xml"
+			script.write_file(object_config.ui, object.ui, object.name, object.guid, "ui")
+		end
 	end
-	object_config.updated = false
+	object_config.updated = write_status ~= 0
+	return write_status
 end
 
 function public.create_autocmd()
@@ -109,7 +111,7 @@ function public.create_autocmd()
 	end
 	write_autocmd = vim.api.nvim_create_autocmd("FileWritePost", {
 		callback = function(args)
-			local path = fs.normalize(args.file)
+			local path = args.file
 			local object = vim.iter(project_config):find(function(object)
 				return object.script == path or object.xml == path
 			end)
@@ -150,6 +152,45 @@ function public.get_script_states(get_all)
 		end
 	end
 	return script_states
+end
+
+local function isDictEmpty(dict)
+	return not next(dict)
+end
+
+function public.set_script_states(script_states)
+	local searchFileQueue = {}
+	for i = 1, #script_states do
+		local object = script_states[i]
+		local write_status = project.write_object(object)
+		if write_status ~= 0 then
+			searchFileQueue[object.guid] = { write_status, object }
+		end
+	end
+	if isDictEmpty(searchFileQueue) then
+		return
+	end
+	vim.fs.find(function(name, path)
+		local _, name, guid, type = script.process_file(path, false)
+		local object = searchFileQueue[guid]
+		if object then
+			if object[1] == OBJECT_WRITE_SCRIPT_UI_FAILED then
+				object_config[guid][type] = path
+				object[1] = object[1] - (type == "script" and OBJECT_WRITE_SCRIPT_FAILED or OBJECT_WRITE_UI_FAILED)
+			elseif type == "script" and object[1] == OBJECT_WRITE_SCRIPT_FAILED then
+				object_config[guid][type] = path
+				object[1] = object[1] - OBJECT_WRITE_SCRIPT_FAILED
+			elseif type == "ui" and object[1] == OBJECT_WRITE_UI_FAILED then
+				object_config[guid][type] = path
+				object[1] = object[1] - OBJECT_WRITE_UI_FAILED
+			end
+			if object[1] == OBJECT_WRITE_SUCCESS then
+				project.write_object(object[2])
+				table.remove(searchFileQueue, guid)
+			end
+		end
+		return isDictEmpty(searchFileQueue)
+	end, { path = project_path })
 end
 
 return public
