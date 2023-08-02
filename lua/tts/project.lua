@@ -124,11 +124,11 @@ function public.create_autocmd()
 	write_autocmd = vim.api.nvim_create_autocmd("FileWritePost", {
 		callback = function(args)
 			local path = args.file
-			local object = vim.iter(project_config):find(function(object)
-				return object.script == path or object.xml == path
-			end)
+			local _, _, _, guid, type = script.process_file(read_file(path), true)
+			local object = project_config[guid]
 			if object then
 				object.updated = true
+				object[type] = path
 			end
 		end,
 	})
@@ -187,13 +187,13 @@ function public.set_script_states(script_states)
 		local object = searchFileQueue[guid]
 		if object then
 			if object[1] == OBJECT_WRITE_SCRIPT_UI_FAILED then
-				object_config[guid][type] = path
+				project_config[guid][type] = path
 				object[1] = object[1] - (type == "script" and OBJECT_WRITE_SCRIPT_FAILED or OBJECT_WRITE_UI_FAILED)
 			elseif type == "script" and object[1] == OBJECT_WRITE_SCRIPT_FAILED then
-				object_config[guid][type] = path
+				project_config[guid][type] = path
 				object[1] = object[1] - OBJECT_WRITE_SCRIPT_FAILED
 			elseif type == "ui" and object[1] == OBJECT_WRITE_UI_FAILED then
-				object_config[guid][type] = path
+				project_config[guid][type] = path
 				object[1] = object[1] - OBJECT_WRITE_UI_FAILED
 			end
 			if object[1] == OBJECT_WRITE_SUCCESS then
