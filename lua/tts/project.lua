@@ -124,7 +124,10 @@ function public.create_autocmd()
 	write_autocmd = vim.api.nvim_create_autocmd("FileWritePost", {
 		callback = function(args)
 			local path = args.file
-			local _, _, _, guid, type = script.process_file(read_file(path), false)
+			local _, _, _, guid, type = script.process_file(path, false)
+			if not guid then
+				return
+			end
 			local object = project_config[guid]
 			if object then
 				object.updated = true
