@@ -46,6 +46,10 @@ public.create_project = project.create_project
 
 public.scan_project = project.scan_project
 
+function public.add()
+	project.add_file_to_push(vim.fs.dirname(vim.api.nvim_buf_get_name(0)))
+end
+
 function public.push()
 	if not started then
 		print("No TTS session")

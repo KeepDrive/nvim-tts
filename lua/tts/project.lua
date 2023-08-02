@@ -117,22 +117,25 @@ function public.write_object(object)
 	return write_status
 end
 
+function public.add_file_to_push(path)
+	local _, _, _, guid, type = script.process_file(path, false)
+	if not guid then
+		return
+	end
+	local object = project_config[guid]
+	if object then
+		object.updated = true
+		object[type] = path
+	end
+end
+
 function public.create_autocmd()
 	if write_autocmd then
 		return
 	end
 	write_autocmd = vim.api.nvim_create_autocmd("FileWritePost", {
 		callback = function(args)
-			local path = args.file
-			local _, _, _, guid, type = script.process_file(path, false)
-			if not guid then
-				return
-			end
-			local object = project_config[guid]
-			if object then
-				object.updated = true
-				object[type] = path
-			end
+			public.add_file_to_push(args.file)
 		end,
 	})
 end
