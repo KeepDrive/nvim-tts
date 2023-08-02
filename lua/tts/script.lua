@@ -2,8 +2,6 @@ local public = {}
 
 local config = require("tts.config").project
 
-local script = require("tts.script")
-
 local xml_prefix = "<!"
 local header_start = "--[[tts.nvim\n"
 local header_name_key = "name="
