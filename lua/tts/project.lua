@@ -138,24 +138,24 @@ function public.get_script_states(get_all)
 	local script_states = {}
 	for guid, object in pairs(project_config) do
 		if get_all or object.updated then
-			local script
+			local scriptCode
 			if object.script then
 				local script_file, err = io.open(object.script)
 				assert(script_file, err)
-				script = script_file:read("*a")
+				scriptCode = script_file:read("*a")
 				script_file:close()
-				assert(script, "Script read error")
+				assert(scriptCode, "Script read error")
 			end
 			local ui
 			if object.ui then
 				local ui_file, err = io.open(object.ui)
 				assert(ui_file, err)
 				ui = ui_file:read("*a")
-				assert(script, "Script read error")
+				assert(ui, "Script read error")
 			end
 			local state = { guid = guid, name = object.name }
-			if script then
-				state.script = script
+			if scriptCode then
+				state.script = scriptCode
 			end
 			if ui then
 				state.ui = ui
