@@ -66,9 +66,13 @@ function public.write_file(path, code, name, guid, file_type)
 		header = xml_prefix .. header .. xml_postfix
 	end
 	if config.header_at_top_of_file then
-		return header .. "\n" .. code
+		code = header .. "\n" .. code
+	else
+		code = code .. "\n" .. header
 	end
-	return code .. "\n" .. header
+	local file = io.open(path, "w")
+	assert(file:write(code))
+	file:close()
 end
 
 return public
