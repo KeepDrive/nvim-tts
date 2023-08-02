@@ -38,8 +38,7 @@ end
 local function connect_sender_handle(handle, ip, port)
 	handle:connect(ip, port, function(err)
 		if err then
-			print("Sender connection failed with error " .. err .. ", retrying")
-			connect_sender_handle(handle, ip, port)
+			print("Sender connection failed with error " .. err)
 		end
 	end)
 end
@@ -51,13 +50,23 @@ local function stop_sender(sender)
 end
 
 local function sender_write(sender, data)
+	local handle = sender.handle
+	if not handle:is_active() then
+		sender.connect()
+	end
 	sender.handle:write(data)
 end
 
 function public.start_sender(ip, port)
 	local handle = loop.new_tcp()
-	connect_sender_handle(handle, ip, port)
-	return { handle = handle, write = sender_write, close = stop_sender }
+	return {
+		handle = handle,
+		write = sender_write,
+		close = stop_sender,
+		connect = function()
+			connect_sender_handle(handle, ip, port)
+		end,
+	}
 end
 
 return public
