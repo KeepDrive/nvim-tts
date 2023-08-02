@@ -23,6 +23,15 @@ local function locate_project()
 	return locations and locations[1]
 end
 
+local function file_exists(path)
+	local file, err = io.open(path)
+	if err then
+		return false
+	end
+	file:close()
+	return true
+end
+
 local function read_file(path)
 	local file, err = io.open(path)
 	assert(file, err)
