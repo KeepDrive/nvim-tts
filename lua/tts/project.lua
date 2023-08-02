@@ -48,6 +48,9 @@ local function write_file(path, data)
 end
 
 local function set_project_path(path)
+	if path == "." then
+		path = vim.uv.cwd()
+	end
 	path = fs.normalize(path)
 	project_path = path
 	project_config_path = project_path .. "/" .. config.config_filename

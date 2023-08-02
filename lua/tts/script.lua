@@ -70,7 +70,8 @@ function public.write_file(path, code, name, guid, file_type)
 	else
 		code = code .. "\n" .. header
 	end
-	local file = io.open(path, "w")
+	local file, err = io.open(path, "w")
+	assert(not err, err)
 	assert(file:write(code))
 	file:close()
 end
