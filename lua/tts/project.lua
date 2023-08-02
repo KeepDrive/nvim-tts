@@ -162,7 +162,7 @@ function public.set_script_states(script_states)
 	local searchFileQueue = {}
 	for i = 1, #script_states do
 		local object = script_states[i]
-		local write_status = project.write_object(object)
+		local write_status = public.write_object(object)
 		if write_status ~= 0 then
 			searchFileQueue[object.guid] = { write_status, object }
 		end
@@ -171,7 +171,7 @@ function public.set_script_states(script_states)
 		return
 	end
 	vim.fs.find(function(name, path)
-		local _, name, guid, type = script.process_file(path, false)
+		local _, _, guid, type = script.process_file(path, false)
 		local object = searchFileQueue[guid]
 		if object then
 			if object[1] == OBJECT_WRITE_SCRIPT_UI_FAILED then
@@ -185,7 +185,7 @@ function public.set_script_states(script_states)
 				object[1] = object[1] - OBJECT_WRITE_UI_FAILED
 			end
 			if object[1] == OBJECT_WRITE_SUCCESS then
-				project.write_object(object[2])
+				public.write_object(object[2])
 				table.remove(searchFileQueue, guid)
 			end
 		end
