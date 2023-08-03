@@ -118,7 +118,7 @@ function public.write_object(object)
 end
 
 function public.add_file_to_push(path)
-	local _, _, _, guid, type = script.process_file(path, false)
+	local _, _, guid, type = script.process_file(path, false)
 	if not guid then
 		return
 	end
