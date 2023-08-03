@@ -37,7 +37,7 @@ local function process_header(header)
 end
 
 function public.process_file(path, remove_header_from_code)
-	remove_header_from_code = remove_header_from_code or true
+	remove_header_from_code = remove_header_from_code == nil or remove_header_from_code
 	local file, err = io.open(path)
 	assert(not err, err)
 	local code = file:read("*a")
