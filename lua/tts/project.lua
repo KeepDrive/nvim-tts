@@ -55,7 +55,7 @@ local FIND_SCRIPT = 1
 local FIND_UI = 2
 local FIND_SCRIPT_UI = 3
 local function find_and_process_moved_files(guid_type_table, process_match)
-	vim.fs.find(function(name, path)
+	fs.find(function(name, path)
 		local _, _, guid, type = script.process_file(path, false)
 		local object_status = guid_type_table[guid]
 		if
@@ -200,6 +200,9 @@ function public.get_script_states(get_all)
 				script_states[#script_states + 1] = object_state
 			end
 		end
+	end
+	if isDictEmpty(files_to_find) then
+		return script_states
 	end
 	find_and_process_moved_files(files_to_find, function(guid, type, path)
 		project_config[guid][type] = path
