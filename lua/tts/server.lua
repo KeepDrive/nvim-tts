@@ -54,7 +54,13 @@ local function sender_write(sender, data)
 	if not handle:is_active() then
 		sender.connect()
 	end
-	sender.handle:write(data)
+	handle:write(data, function(err)
+		if err then
+			print("Sender write failed with error " .. err)
+		else
+			print("Sender write successful")
+		end
+	end)
 end
 
 function public.start_sender(ip, port)
