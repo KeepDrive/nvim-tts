@@ -1,180 +1,162 @@
 local fs = vim.fs
-local json = vim.json
+local get_workdir = vim.fn.getcwd
 local get_homedir = vim.loop.os_homedir
+local json = vim.json
 
-local config = require("tts.config").project
 local script = require("tts.script")
 
-local project_path = nil
-local project_config = {}
-local project_config_path = nil
+local global_config = require("tts.config").project
+local local_config = {}
+
+local write_autocmd
+local workspace_path
 
 local public = {}
 
-local write_autocmd
-
-local function get_buffer_dir()
-	return fs.dirname(vim.api.nvim_buf_get_name(0))
+local function join_path(...)
+  return table.concat({...}, '/')
 end
 
-local function locate_project()
-	local locations =
-		fs.find(config.config_filename, { upward = true, type = "file", stop = get_homedir(), path = get_buffer_dir() })
-	return locations and locations[1]
+local function check_file_exists(path, filename)
+  return fs.find(filename or path, {upward = true, type = 'file', path = path, stop = path})[1] and true or false
 end
 
-local function isDictEmpty(dict)
-	return not next(dict)
-end
-
-local function file_exists(path)
-	local file, err = io.open(path)
-	if err then
-		return false
-	end
+local function write_file(path, contents)
+	local file, err = io.open(path, "w")
+	assert(file, err)
+	assert(file:write(contents))
 	file:close()
-	return true
 end
 
 local function read_file(path)
-	local file, err = io.open(path)
+	local file, err = io.open(path, "r")
 	assert(file, err)
-	local data = file:read("*a")
+	local contents = file:read("*a")
 	file:close()
-	return data
+  return contents
 end
 
-local function write_file(path, data)
-	local file, err = io.open(path, "w")
-	assert(file, err)
-	assert(file:write(data))
-	file:close()
+local function get_local_config_path()
+  return workspace_path and join_path(workspace_path, global_config.config_filename)
 end
 
-local FIND_SCRIPT = 1
-local FIND_UI = 2
-local FIND_SCRIPT_UI = 3
-local function find_and_process_moved_files(guid_type_table, process_match)
-	fs.find(function(name, path)
-		local _, _, guid, type = script.process_file(path, false)
-		local object_status = guid_type_table[guid]
-		if
-			not object_status
-			or (type == "script" and object_status % 2 ~= 1)
-			or (type == "ui" and object_status < 2)
-		then
-			return false
-		end
-		object_status = object_status - (type == "script" and FIND_SCRIPT or FIND_UI)
-		guid_type_table[guid] = object_status
-		process_match(guid, type, path)
-		if object_status == 0 then
-			table.remove(guid_type_table, guid)
-		end
-		return isDictEmpty(guid_type_table)
-	end, { path = project_path })
+local function write_local_config(path)
+	write_file(path or get_local_config_path(), json.encode(local_config))
 end
 
-local function set_project_path(path)
-	if path == "." then
-		path = vim.loop.cwd()
-	end
-	path = fs.normalize(path)
-	project_path = path
-	project_config_path = project_path .. "/" .. config.config_filename
+local function read_local_config(path)
+	local_config = json.decode(read_file(path or get_local_config_path()))
 end
 
-function public.write_config()
-	write_file(project_config_path, json.encode(project_config))
+local function get_from_config(key)
+  return local_config[key] or global_config[key]
 end
 
-function public.read_config()
-	local config_data = read_file(project_config_path)
-	assert(config_data, "Config read failed")
-	project_config = json.decode(config_data)
+local function fancy_format(str, ...)
+  local args = {...}
+  local format = str:gsub("%$%d+", "%%s")
+  local format_args = {}
+  for num in str:gmatch("%$(%d+)") do
+    format_args[#format_args+1] = args[tonumber(num)] or ""
+  end
+  return format:format(unpack(format_args))
 end
 
 function public.create_project()
-	if locate_project() then
-		print("Project config already exists, stopping")
-		return
-	end
-	set_project_path(".")
-	public.write_config()
+  local cur_workspace_path = get_workdir()
+  if check_file_exists(cur_workspace_path, global_config.config_filename) then
+    print("A project config already exists in the working directory. Stopping.")
+    return
+  end
+  workspace_path = cur_workspace_path
+  for k, v in pairs(global_config) do
+    local_config[k] = v
+  end
+  write_local_config()
+  print("Created project config in the working directory.")
 end
 
 function public.load_project()
-	local path = locate_project()
-	if not path then
-		print("TTS project not found")
-		return
-	end
-	set_project_path(fs.dirname(path))
-	public.read_config()
+  local config_path = fs.find(global_config.config_filename, {upward = true, type = 'file', stop = get_homedir()})[1]
+  if not config_path then
+    print("Failed to find project config.")
+    return
+  end
+  workspace_path = fs.dirname(config_path)
+  read_local_config(config_path)
 end
 
 function public.write_object(object)
-	local write_status = 0
-	local object_config = project_config[object.guid]
-	if not object_config then
-		object_config = {}
-		project_config[object.guid] = object_config
-	end
-	object_config.name = object.name
-	if object.script then
-		if object_config.script and not file_exists(object_config.script) then
-			write_status = write_status + FIND_SCRIPT
-		else
-			object_config.script = object_config.script or project_path .. "/" .. object.guid .. ".lua"
-			script.write_file(object_config.script, object.script, object.name, object.guid, "script")
-		end
-	end
-	if object.ui then
-		if object_config.ui and not file_exists(object_config.ui) then
-			write_status = write_status + FIND_UI
-		else
-			object_config.ui = object_config.ui or project_path .. "/" .. object.guid .. ".xml"
-			script.write_file(object_config.ui, object.ui, object.name, object.guid, "ui")
-		end
-	end
-	object_config.updated = write_status ~= 0
-	return write_status
+  local filename_pattern = get_from_config("object_filename_pattern")
+  local json_object, json_path = public.get_object(object.guid, false)
+  if not json_path then
+    local json_file = fancy_format(filename_pattern, object.name, object.guid, "json")
+    json_path = join_path(workspace_path, json_file)
+  end
+  local json_dir = fs.dirname(json_path)
+  if object.script then
+    local script_file = json_object and json_object.script
+    if not script_file then
+      script_file = fancy_format(filename_pattern, object.name, object.guid, "lua")
+    end
+    local script_path = join_path(json_dir, script_file)
+    write_file(script_path, object.script)
+    object.script = script_file
+  end
+  if object.ui then
+    local ui_file = json_object and json_object.ui
+    if not ui_file then
+      ui_file = fancy_format(filename_pattern, object.name, object.guid, "xml")
+    end
+    local ui_path = join_path(json_dir, ui_file)
+    write_file(ui_path, object.ui)
+    object.ui = ui_file
+  end
+  write_file(json_path, json.encode(object))
 end
 
-function public.get_object(guid)
-	local object = project_config[guid]
-	local state = { guid = guid, name = object.name }
-	local file_status = 0
-	local script_path = object.script
-	local ui_path = object.ui
-	if script_path and not file_exists(script_path) then
-		file_status = file_status + FIND_SCRIPT
-	end
-	if ui_path and not file_exists(ui_path) then
-		file_status = file_status + FIND_UI
-	end
-	if file_status ~= 0 then
-		return nil, file_status
-	end
-	if script_path then
-		state.script = script.process_file(script_path)
-	end
-	if ui_path then
-		state.ui = script.process_file(ui_path)
-	end
-	return state
+local json_cache = {}
+local function build_json_cache()
+  local jsons = fs.find(function(name, path)
+    return name:find("%.json$") and true or false
+  end, {type = 'file', path = workspace_path, limit = math.huge})
+  for i = 1, #jsons do
+    local guid = json.decode(read_file(jsons[i])).guid
+    if guid then
+      json_cache[guid] = jsons[i]
+    end
+  end
 end
 
+local function read_object_by_path(path, paths_to_contents)
+  paths_to_contents = paths_to_contents == nil and true or paths_to_contents
+  local object = json.decode(read_file(path))
+  local dir = fs.dirname(path)
+  if paths_to_contents then
+    object.script = object.script and read_file(join_path(dir, object.script))
+    object.ui = object.ui and read_file(join_path(dir, object.ui))
+  end
+  return object
+end
+
+function public.get_object(guid, paths_to_contents)
+  paths_to_contents = paths_to_contents == nil and true or paths_to_contents
+  local json_path = json_cache[guid]
+  if json_path and check_file_exists(json_path) then
+    local object = read_object_by_path(json_path, paths_to_contents)
+    if object.guid == guid then
+      return object, json_path
+    end
+    json_cache[guid] = nil
+  end
+  build_json_cache()
+  json_path = json_cache[guid]
+  return json_path and read_object_by_path(json_path, paths_to_contents), json_path
+end
+
+local changed_file_cache = {}
 function public.add_file_to_push(path)
-	local _, _, guid, type = script.process_file(path, false)
-	if not guid then
-		return
-	end
-	local object = project_config[guid]
-	if object then
-		object.updated = true
-		object[type] = path
-	end
+  changed_file_cache[path] = true
 end
 
 function public.create_autocmd()
@@ -189,50 +171,33 @@ function public.create_autocmd()
 end
 
 function public.get_script_states(get_all)
-	local script_states = {}
-	local files_to_find = {}
-	for guid, object in pairs(project_config) do
-		if get_all or object.updated then
-			local object_state, status = public.get_object(guid)
-			if status then
-				files_to_find[guid] = status
-			else
-				script_states[#script_states + 1] = object_state
-			end
-		end
-	end
-	if isDictEmpty(files_to_find) then
-		return script_states
-	end
-	find_and_process_moved_files(files_to_find, function(guid, type, path)
-		project_config[guid][type] = path
-		if files_to_find[guid] == 0 then
-			script_states[#script_states + 1] = public.get_object(guid)
-		end
-	end)
-	return script_states
+  build_json_cache()
+  local objects = {}
+  if get_all then
+    for _, path in pairs(json_cache) do
+      objects[#objects+1] = read_object_by_path(path)
+    end
+  else
+    for _, path in pairs(json_cache) do
+      local object = read_object_by_path(path, false)
+      local dir = fs.dirname(path)
+      local script_path = object.script and join_path(dir, object.script)
+      local ui_path = object.ui and join_path(dir, object.ui)
+      if (script_path and changed_file_cache[script_path]) or (ui_path and changed_file_cache[ui_path]) then
+        object.script = object.script and read_file(script_path)
+        object.ui = object.ui and read_file(ui_path)
+        objects[#objects+1] = object
+      end
+    end
+  end
+  changed_file_cache = {}
+  return objects
 end
 
 function public.set_script_states(script_states)
-	local file_status_queue = {}
-	local guid_to_object = {}
-	for i = 1, #script_states do
-		local object = script_states[i]
-		local write_status = public.write_object(object)
-		if write_status ~= 0 then
-			file_status_queue[object.guid] = write_status
-			guid_to_object[object.guid] = object
-		end
-	end
-	if isDictEmpty(file_status_queue) then
-		return
-	end
-	find_and_process_moved_files(file_status_queue, function(guid, type, path)
-		project_config[guid][type] = path
-		if file_status_queue[guid] == 0 then
-			public.write_object(guid_to_object[guid])
-		end
-	end)
+  for i = 1, #script_states do
+    public.write_object(script_states[i])
+  end
 end
 
 return public
