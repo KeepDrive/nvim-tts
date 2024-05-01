@@ -35,42 +35,36 @@ function public.start_listener(ip, port, reader)
 	return listener
 end
 
-local function connect_sender_handle(handle, ip, port)
+local function connect_sender_handle(handle, ip, port, callback)
+  local handle = loop.new_tcp()
 	handle:connect(ip, port, function(err)
 		if err then
 			print("Sender connection failed with error " .. err)
+      return
 		end
+    callback(handle)
+    handle:shutdown()
+    handle:close()
 	end)
-end
-
-local function stop_sender(sender)
-	local handle = sender.handle
-	handle:shutdown()
-	handle:close()
 end
 
 local function sender_write(sender, data)
-	local handle = sender.handle
-	if not handle:is_active() then
-		sender.connect()
-	end
-	handle:write(data, function(err)
-		if err then
-			print("Sender write failed with error " .. err)
-		else
-			print("Sender write successful")
-		end
-	end)
+  sender:connect(function(handle)
+	  handle:write(data, function(err)
+		  if err then
+			  print("Sender write failed with error " .. err)
+		  else
+			  print("Sender write successful")
+		  end
+	  end)
+  end)
 end
 
 function public.start_sender(ip, port)
-	local handle = loop.new_tcp()
 	return {
-		handle = handle,
 		write = sender_write,
-		close = stop_sender,
-		connect = function()
-			connect_sender_handle(handle, ip, port)
+		connect = function(self, callback)
+			connect_sender_handle(self.handle, ip, port, callback)
 		end,
 	}
 end
