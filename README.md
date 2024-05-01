@@ -25,7 +25,7 @@ The plugin adds multiple vim commands:
 - `TTSExec <guid> <lua code>` executes Lua code inside TTS using the given object.
 
 ## To-do
-I should probably consider rewriting the plugin system using LSP instead of what I ended up with.
+I should probably consider rewriting the project system using LSP instead of what I ended up with.
 
 ## License
 This project is licensed under the MIT license, see LICENSE
