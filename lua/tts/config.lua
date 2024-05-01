@@ -23,12 +23,13 @@ return {
 		handle_custom_message = function(msg) end,
 	},
 	project = {
+		---Change this if you want the config to be called something else
+		config_filename = ".tts.json",
 		---How deep the project should be scanned for lua/xml files
 		scan_depth = 5,
-		---Change this if you want the config to be called something else
-		config_filename = ".tts",
-		---Header write rule, true if you want the header to be at the top of the file, false if you want it at the bottom.
-		header_at_top_of_file = true,
+		---Change this if you want new pulled files to be called something else
+    ---$1 is the name, $2 is the guid, $3 is the format
+		object_filename_pattern = "$1-$2.$3",
 	},
 	general = {
 		---Use an autocmd to track file updates so only updated files get sent to TTS
