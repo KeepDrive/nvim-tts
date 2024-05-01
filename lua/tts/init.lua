@@ -36,8 +36,6 @@ function public.stop()
 		return
 	end
 	listener:close()
-	sender:close()
-	project.write_config()
 	started = false
 	print("TTS session stopped")
 end
@@ -56,6 +54,14 @@ function public.push()
 		return
 	end
 	sender:write(writer.write_save_and_play(not config.general.use_file_write_autocmd))
+end
+
+function public.push_all()
+	if not started then
+		print("No TTS session")
+		return
+	end
+	sender:write(writer.write_save_and_play(true))
 end
 
 function public.pull()
