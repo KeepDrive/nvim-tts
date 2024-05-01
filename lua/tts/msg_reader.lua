@@ -11,12 +11,10 @@ end
 
 local function read_new_script(msg)
 	handle_script_states(msg.scriptStates)
-	project.write_config()
 end
 
 local function read_load_game(msg)
 	handle_script_states(msg.scriptStates)
-	project.write_config()
 end
 
 local function read_print(msg)
@@ -41,7 +39,6 @@ end
 
 local function read_created_object(msg)
 	project.write_object(nil, msg.guid, nil, nil)
-	project.write_config()
 end
 
 local readers = {
