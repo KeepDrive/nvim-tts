@@ -163,11 +163,10 @@ function public.create_autocmd()
 	if write_autocmd then
 		return
 	end
-	write_autocmd = vim.api.nvim_create_autocmd("FileWritePost", {
-		callback = function(args)
-			public.add_file_to_push(args.file)
-		end,
-	})
+  local	callback = function(args)
+		public.add_file_to_push(join_path(get_workdir(), args.file))
+  end
+	write_autocmd = vim.api.nvim_create_autocmd({"FileWritePost", "FileAppendPost", "BufWritePost"}, { callback = callback})
 end
 
 function public.get_script_states(get_all)
