@@ -14,7 +14,7 @@ require("lazy").setup({
 ```
 
 ## Usage
-It's perhaps a bit unorthodox, in part due to how Tabletop handles external editors and its objects, I ended up opting with a somewhat clunky system where for each object has its own json file containing its name, guid and relative paths to script files; this is so that you can manage your code however you like, at the code of potentially extra work manually adding paths to object files.
+It's perhaps a bit unorthodox, in part due to how Tabletop handles external editors and its objects, I ended up opting with a somewhat clunky system where for each object has its own json file containing its name, guid and relative paths to script files; this is so that you can manage your code however you like, at the cost of potentially extra work manually adding paths to object files.
 
 The plugin adds multiple vim commands:
 - `TTSCreate` adds a local configuration file to mark the root of a project.
