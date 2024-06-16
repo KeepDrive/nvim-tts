@@ -35,7 +35,7 @@ local function read_file(path)
 end
 
 local function remove_included_code_block(script)
-  return script:gsub("%-%-#include%(\"(.-)\"%).-%-%-#endinclude", "#include(%1)")
+  return script:gsub("%-%-#include%(\"(.-)\"%).-%-%-#endinclude", "#include(\"%1\")")
 end
 
 local insert_included_code
