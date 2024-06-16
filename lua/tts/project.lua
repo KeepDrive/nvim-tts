@@ -3,8 +3,6 @@ local get_workdir = vim.fn.getcwd
 local get_homedir = vim.loop.os_homedir
 local json = vim.json
 
-local script = require("tts.script")
-
 local global_config = require("tts.config").project
 local local_config = {}
 
@@ -34,6 +32,24 @@ local function read_file(path)
 	local contents = file:read("*a")
 	file:close()
   return contents
+end
+
+local function remove_included_code_block(script)
+  return script:gsub("%-%-#include%(\"(.-)\"%).-%-%-#endinclude", "#include(%1)")
+end
+
+local insert_included_code
+
+local function create_included_code_block(script_path, wrap_in_metadata)
+  local code_block = insert_included_code(read_file(join_path(workspace_path, script_path)), false)
+  if wrap_in_metadata then
+    return table.concat({"--#include(\"", script_path, "\")\n", code_block, "\n--#endinclude"})
+  end
+  return code_block
+end
+
+insert_included_code = function(script, wrap_in_metadata)
+  return script:gsub("#include%(\"(.-)\"%)", function(path) return create_included_code_block(path, wrap_in_metadata) end)
 end
 
 local function get_local_config_path()
@@ -100,7 +116,7 @@ function public.write_object(object)
       script_file = fancy_format(filename_pattern, object.name, object.guid, "lua")
     end
     local script_path = join_path(json_dir, script_file)
-    write_file(script_path, object.script)
+    write_file(script_path, remove_included_code_block(object.script))
     object.script = script_file
   end
   if object.ui then
@@ -121,9 +137,13 @@ local function build_json_cache()
     return name:find("%.json$") and true or false
   end, {type = 'file', path = workspace_path, limit = math.huge})
   for i = 1, #jsons do
-    local guid = json.decode(read_file(jsons[i])).guid
-    if guid then
-      json_cache[guid] = jsons[i]
+    local json_text = read_file(jsons[i])
+    local success, json_table = pcall(json.decode, json_text)
+    if success then
+      local guid = json_table.guid
+      if guid then
+        json_cache[guid] = jsons[i]
+      end
     end
   end
 end
@@ -133,7 +153,7 @@ local function read_object_by_path(path, paths_to_contents)
   local object = json.decode(read_file(path))
   local dir = fs.dirname(path)
   if paths_to_contents then
-    object.script = object.script and read_file(join_path(dir, object.script))
+    object.script = object.script and insert_included_code(read_file(join_path(dir, object.script)), true)
     object.ui = object.ui and read_file(join_path(dir, object.ui))
   end
   return object
@@ -183,7 +203,7 @@ function public.get_script_states(get_all)
       local script_path = object.script and join_path(dir, object.script)
       local ui_path = object.ui and join_path(dir, object.ui)
       if (script_path and changed_file_cache[script_path]) or (ui_path and changed_file_cache[ui_path]) then
-        object.script = object.script and read_file(script_path)
+        object.script = object.script and insert_included_code(read_file(script_path), true)
         object.ui = object.ui and read_file(ui_path)
         objects[#objects+1] = object
       end
