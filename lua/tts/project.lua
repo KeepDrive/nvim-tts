@@ -34,22 +34,34 @@ local function read_file(path)
   return contents
 end
 
-local function remove_included_code_block(script)
-  return script:gsub("%-%-#include%(\"(.-)\"%).-%-%-#endinclude", "#include(\"%1\")")
+local function remove_required_code_block(script)
+  return script:gsub(".*%-%-EMULATEDREQUIRESBLOCKEND\n", "")
 end
 
-local insert_included_code
-
-local function create_included_code_block(script_path, wrap_in_metadata)
-  local code_block = insert_included_code(read_file(join_path(workspace_path, script_path)), false)
-  if wrap_in_metadata then
-    return table.concat({"--#include(\"", script_path, "\")\n", code_block, "\n--#endinclude"})
+local function get_all_requires(script, requires, order)
+  local isHead = requires == nil
+  requires = requires or {}
+  order = order or {}
+  for filename in script:gmatch("require%(\"(.-)\"%)") do
+    if not requires[filename] then
+      local require_contents = read_file(join_path(workspace_path, filename .. ".lua"))
+      requires, order = get_all_requires(require_contents, requires, order)
+      requires[filename] = require_contents
+      order[#order+1] = filename
+    end
   end
-  return code_block
+  if not isHead then
+    return requires, order
+  end
+  local processedRequires = order
+  for i = 1, #order do
+    processedRequires[i] = ("_modules[\"%s\"]=(function()%s\nend)()"):format(order[i], requires[order[i]])
+  end
+  return table.concat(processedRequires, '\n')
 end
 
-insert_included_code = function(script, wrap_in_metadata)
-  return script:gsub("#include%(\"(.-)\"%)", function(path) return create_included_code_block(path, wrap_in_metadata) end)
+function public.insert_emulated_requires_block(script_contents)
+  return table.concat({"_G._modules = {}\nfunction _G.require(n) return _modules[n] end\n", get_all_requires(script_contents), "\n--EMULATEDREQUIRESBLOCKEND\n", script_contents})
 end
 
 local function get_local_config_path()
@@ -116,7 +128,7 @@ function public.write_object(object)
       script_file = fancy_format(filename_pattern, object.name, object.guid, "lua")
     end
     local script_path = join_path(json_dir, script_file)
-    write_file(script_path, remove_included_code_block(object.script))
+    write_file(script_path, remove_required_code_block(object.script))
     object.script = script_file
   end
   if object.ui then
@@ -153,7 +165,7 @@ local function read_object_by_path(path, paths_to_contents)
   local object = json.decode(read_file(path))
   local dir = fs.dirname(path)
   if paths_to_contents then
-    object.script = object.script and insert_included_code(read_file(join_path(dir, object.script)), true)
+    object.script = object.script and public.insert_emulated_requires_block(read_file(join_path(dir, object.script)))
     object.ui = object.ui and read_file(join_path(dir, object.ui))
   end
   return object
@@ -203,7 +215,7 @@ function public.get_script_states(get_all)
       local script_path = object.script and join_path(dir, object.script)
       local ui_path = object.ui and join_path(dir, object.ui)
       if (script_path and changed_file_cache[script_path]) or (ui_path and changed_file_cache[ui_path]) then
-        object.script = object.script and insert_included_code(read_file(script_path), true)
+        object.script = object.script and public.insert_emulated_requires_block(read_file(script_path))
         object.ui = object.ui and read_file(ui_path)
         objects[#objects+1] = object
       end
