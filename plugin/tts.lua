@@ -14,3 +14,4 @@ create_command("TTSExec", function(args)
 	end
 	tts.exec_lua_code(unpack(args.args))
 end, { nargs = "+" })
+create_command("TTSView", tts.preview, {})

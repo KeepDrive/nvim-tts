@@ -88,4 +88,20 @@ function public.send_custom_message(msg)
 	sender:write(writer.write_custom_message(msg))
 end
 
+function public.preview()
+	if not started then
+		print("No TTS session")
+		return
+	end
+  local lines = {}
+  do
+    local expanded_code = project.insert_emulated_requires_block(table.concat(vim.api.nvim_buf_get_lines(vim.api.nvim_get_current_buf(), 0, -1, false), "\n"))
+    for str in expanded_code:gmatch("(.-)\n") do
+      lines[#lines+1] = str
+    end
+  end
+  vim.api.nvim_command("botright vnew")
+  vim.api.nvim_buf_set_lines(vim.api.nvim_get_current_buf(), 0, -1, true, lines)
+end
+
 return public
