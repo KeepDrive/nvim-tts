@@ -61,7 +61,11 @@ local function get_all_requires(script, requires, order)
 end
 
 function public.insert_emulated_requires_block(script_contents)
-  return table.concat({"_G._modules = {}\nfunction _G.require(n) return _modules[n] end\n", get_all_requires(script_contents), "\n--EMULATEDREQUIRESBLOCKEND\n", script_contents})
+  local requires = get_all_requires(script_contents)
+  if requires == "" then
+    return script_contents
+  end
+  return table.concat({"_G._modules = {}\nfunction _G.require(n) return _modules[n] end\n", requires, "\n--EMULATEDREQUIRESBLOCKEND\n", script_contents})
 end
 
 local function get_local_config_path()
