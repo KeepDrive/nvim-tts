@@ -15,7 +15,7 @@ require("lazy").setup({
 
 ## Usage
 It's perhaps a bit unorthodox, in part due to how Tabletop handles external editors and its objects, I ended up opting with a somewhat clunky system where for each object has its own json file containing its name, guid and relative paths to script files; this is so that you can manage your code however you like, at the cost of potentially extra work manually adding paths to object files.
-Additionally `require()` is supported by embedding a header into scripts that get sent to Tabletop that overloads the function and loads all the modules in. This works as long as requires strictly follow the `require("path/to/module/from/project/root")` format, tts.nvim won't be able to figure out any module names fetched dynamically and only recognises double-quoted strings as of right now. Modules can require other modules, cyclical dependencies that could work in regular Lua _might_ be loaded in an impromper order.
+Additionally `require()` is supported by embedding a header into scripts that get sent to Tabletop that overloads the function and loads all the modules in. This works as long as you strictly follow the `require("path/to/module/from/project/root")` format, tts.nvim won't be able to figure out any module paths created dynamically and only recognises single quoted and double quoted paths as of right now. Modules can require other modules, but cyclical dependencies that could work in regular Lua _might_ get loaded in an impromper order.
 
 The plugin adds multiple vim commands:
 - `TTSCreate` adds a local configuration file to mark the root of a project.

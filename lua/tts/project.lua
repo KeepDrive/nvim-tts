@@ -42,7 +42,7 @@ local function get_all_requires(script, requires, order)
   local isHead = requires == nil
   requires = requires or {}
   order = order or {}
-  for filename in script:gmatch("require%(\"(.-)\"%)") do
+  for filename in script:gmatch("require%([\"\'](.-)[\"\']%)") do
     if not requires[filename] then
       local require_contents = read_file(join_path(workspace_path, filename .. ".lua"))
       requires, order = get_all_requires(require_contents, requires, order)
