@@ -20,15 +20,13 @@ local function check_file_exists(path, filename)
 end
 
 local function write_file(path, contents)
-	local file, err = io.open(path, "w")
-	assert(file, err)
+	local file = assert(io.open(path, "w"))
 	assert(file:write(contents))
 	file:close()
 end
 
 local function read_file(path)
-	local file, err = io.open(path, "r")
-	assert(file, err)
+	local file = assert(io.open(path, "r"))
 	local contents = file:read("*a")
 	file:close()
   return contents

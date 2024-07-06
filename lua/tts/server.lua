@@ -21,6 +21,7 @@ function public.start_listener(ip, port, reader)
 		local client = loop.new_tcp()
 		handle:accept(client)
 		listener.client = client
+    local json = ""
 		client:read_start(function(err, data)
 			assert(not err, err)
 			if not data then
@@ -29,7 +30,14 @@ function public.start_listener(ip, port, reader)
 				listener.client = nil
 				return
 			end
-			reader(data)
+      --i'm not really sure how to properly handle incomplete data
+      --for now i'm gonna make it so it assumes the data is complete
+      --only if it makes valid json and i think this hack should do it
+      json = json .. data
+      if data:find("\n}$") then
+			  reader(json)
+        json = ""
+      end
 		end)
 	end)
 	return listener
